@@ -27,11 +27,20 @@
   main { max-width: 960px; margin: 0 auto; padding: 40px 16px 56px; }
   header h1 { margin: 0 0 6px; font-size: 26px; font-weight: 600; }
   header p { margin: 0; color: var(--muted); }
+  nav { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  nav a {
+    font-size: 13px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px;
+    color: var(--text); text-decoration: none; background: var(--card);
+  }
+  nav a:hover { background: var(--accent-soft); }
   .search {
-    margin: 24px 0 20px; width: 100%; padding: 10px 14px; font: inherit;
+    margin: 24px 0 8px; width: 100%; padding: 10px 14px; font: inherit;
     color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 8px;
   }
   .search:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  section { margin-top: 32px; scroll-margin-top: 16px; }
+  section > h2 { margin: 0; font-size: 19px; font-weight: 600; }
+  section > .sub { margin: 2px 0 14px; color: var(--muted); font-size: 14px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; }
   .card {
     display: flex; flex-direction: column; gap: 10px; padding: 20px;
@@ -42,7 +51,7 @@
     flex: none; width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center;
     background: var(--accent-soft); font-size: 20px;
   }
-  .card h2 { margin: 0; font-size: 17px; font-weight: 600; }
+  .card h3 { margin: 0; font-size: 17px; font-weight: 600; }
   .tag { font-size: 12px; color: var(--muted); }
   .card p { margin: 0; color: var(--muted); flex: 1; }
   .when { font-size: 13px; color: var(--text); }
@@ -55,7 +64,25 @@
   .btn-primary:hover { filter: brightness(1.08); }
   .btn-secondary { border: 1px solid var(--border); color: var(--text); }
   .btn-secondary:hover { background: var(--accent-soft); }
-  .btn[aria-disabled="true"] { opacity: .5; pointer-events: none; }
+  .files {
+    list-style: none; margin: 0; padding: 0; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+  }
+  .files li + li { border-top: 1px solid var(--border); }
+  .files a {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--text); text-decoration: none;
+  }
+  .files a:hover { background: var(--accent-soft); }
+  .ext {
+    flex: none; width: 46px; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .03em;
+    padding: 3px 0; border-radius: 4px; background: var(--accent-soft); color: var(--accent);
+  }
+  .file-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .file-app { flex: none; font-size: 12px; color: var(--muted); }
+  @media (max-width: 520px) {
+    .files a { flex-wrap: wrap; }
+    .file-app { width: 100%; padding-left: 58px; }
+  }
   .empty { color: var(--muted); padding: 24px 0; }
   footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
 </style>
@@ -65,61 +92,105 @@
   <header>
     <h1>Portal de Aplicações</h1>
     <p>Escolhe a aplicação de que precisas. Os ficheiros são processados no teu browser.</p>
+    <nav aria-label="Secções">
+      <a href="#operacionais">Operacionais do CAWA</a>
+      <a href="#projectos">Acções em Projectos</a>
+      <a href="#opls">OPLs</a>
+      <a href="#material">Material de apoio</a>
+    </nav>
   </header>
 
-  <input class="search" type="search" id="search" placeholder="Procurar (ex.: abertura, fecho, etiquetas, CAWA)…" aria-label="Procurar aplicação">
+  <input class="search" type="search" id="search" placeholder="Procurar (ex.: abertura, fecho, etiquetas, pesos, CAWA)…" aria-label="Procurar">
 
-  <section class="grid" id="grid"></section>
-  <p class="empty" id="empty" hidden>Nenhuma aplicação corresponde à pesquisa.</p>
+  <div id="content"></div>
+  <p class="empty" id="empty" hidden>Nada corresponde à pesquisa.</p>
 
   <footer>Falta alguma aplicação ou um link não funciona? Fala com a equipa Cawa.</footer>
 </main>
 
 <script>
   // ------------------------------------------------------------------
-  // CONFIGURAÇÃO — substitui os URLs pelos links do GitHub Pages.
-  // "doc" é opcional (OPL / manual); deixa "" se não existir.
+  // CONFIGURAÇÃO
+  // Aplicações: "grupo" decide a secção. "opl" e "material" são caminhos
+  // de ficheiros deste repositório (pastas OPLS/ e MATERIAL_APOIO/);
+  // deixa "" se não existir.
   // ------------------------------------------------------------------
+  const GRUPOS = [
+    { id: "operacionais", titulo: "Operacionais do CAWA", sub: "Tarefas do dia a dia: aberturas, fechos e etiquetas das lojas." },
+    { id: "projectos", titulo: "Acções em Projectos", sub: "Ferramentas usadas em projectos específicos." }
+  ];
+
   const APPS = [
     {
+      grupo: "operacionais",
       nome: "Aberturas de Lojas",
       tag: "dSeries · MFT",
       icone: "🏪",
       descricao: "Acrescenta lojas novas às applications XML do MFT, por insígnia.",
       quando: "Abriu uma loja nova e é preciso incluí-la nos fluxos.",
       url: "https://sag72.github.io/CaWa_NovaLoja/",
-      doc: ""
+      opl: "OPLS/OPL – Abertura de Lojas no dSeries.pdf",
+      material: ""
     },
     {
+      grupo: "operacionais",
       nome: "Fechos de Lojas",
       tag: "dSeries · MFT",
       icone: "🔒",
       descricao: "Remove lojas fechadas das applications XML do MFT.",
       quando: "Uma loja fechou e tem de sair dos fluxos.",
       url: "https://sag72.github.io/CaWa_ApagarLoja/",
-      doc: ""
+      opl: "OPLS/OPL – Fecho de Lojas no dSeries.pdf",
+      material: ""
     },
     {
+      grupo: "operacionais",
       nome: "Etiquetas Eletrónicas",
       tag: "VUSION · GAMFT CQPML",
       icone: "🏷️",
       descricao: "Adiciona ou remove lojas nos XML VUSION (ELEC/STOCK) e GAMFT CQPML.",
       quando: "Uma loja passa a ter (ou deixa de ter) etiquetas eletrónicas.",
       url: "https://sag72.github.io/CaWa_EtiquetasElectronicas/",
-      doc: ""
+      opl: "",
+      material: ""
     },
     {
+      grupo: "projectos",
       nome: "Gerador CAWA ELECTAG CQ/PML",
       tag: "CAWA · MFT",
       icone: "⚙️",
       descricao: "Gera as applications MFT_FO_GAMFT_ELECTAG_CQPML a partir do Excel de lojas, acrescenta lojas/jobs e adiciona insígnia aos jobs PML.",
       quando: "É preciso criar ou atualizar applications CQ/PML em bloco.",
       url: "https://sag72.github.io/CaWa_Electag_CQ_PML/",
-      doc: ""
+      opl: "OPLS/OPL_Gerador_CAWA.docx",
+      material: "MATERIAL_APOIO/LojasUnifo_CQ_PML.xlsx"
+    },
+    {
+      grupo: "projectos",
+      nome: "Pesos",
+      tag: "CAWA · MFT · SCOT",
+      icone: "⚖️",
+      descricao: "Acrescenta lojas do Excel às applications XML MFT de pesos (SCOT EANS), por insígnia (CNT, CBD, MDL).",
+      quando: "É preciso incluir lojas novas nos fluxos de pesos.",
+      url: "https://sag72.github.io/CaWa_Pesos/",
+      opl: "",
+      material: "MATERIAL_APOIO/CAWA_MFT_BDPESOS.xlsx"
     }
   ];
 
-  const grid = document.getElementById("grid");
+  // Ficheiros das pastas (o "app" indica para que aplicação servem).
+  const OPLS = [
+    { ficheiro: "OPLS/OPL – Abertura de Lojas no dSeries.pdf", app: "Aberturas de Lojas" },
+    { ficheiro: "OPLS/OPL – Fecho de Lojas no dSeries.pdf", app: "Fechos de Lojas" },
+    { ficheiro: "OPLS/OPL_Gerador_CAWA.docx", app: "Gerador CAWA ELECTAG CQ/PML" }
+  ];
+
+  const MATERIAL = [
+    { ficheiro: "MATERIAL_APOIO/LojasUnifo_CQ_PML.xlsx", app: "Gerador CAWA ELECTAG CQ/PML" },
+    { ficheiro: "MATERIAL_APOIO/CAWA_MFT_BDPESOS.xlsx", app: "Pesos" }
+  ];
+
+  const content = document.getElementById("content");
   const empty = document.getElementById("empty");
   const search = document.getElementById("search");
 
@@ -130,37 +201,82 @@
     return node;
   }
 
+  const nomeFicheiro = caminho => caminho.split("/").pop();
+  const extensao = caminho => (caminho.split(".").pop() || "").toUpperCase();
+  const corresponde = (q, ...campos) => campos.join(" ").toLowerCase().includes(q);
+
+  function secao(id, titulo, sub) {
+    const s = el("section", { id });
+    s.append(el("h2", {}, titulo), el("p", { class: "sub" }, sub));
+    return s;
+  }
+
+  function cartao(a) {
+    const card = el("article", { class: "card" });
+
+    const head = el("div", { class: "card-head" });
+    head.append(el("div", { class: "icon", "aria-hidden": "true" }, a.icone));
+    const titulo = el("div");
+    titulo.append(el("h3", {}, a.nome), el("div", { class: "tag" }, a.tag));
+    head.append(titulo);
+
+    const quando = el("div", { class: "when" });
+    quando.append(el("b", {}, "Quando usar: "), document.createTextNode(a.quando));
+
+    const actions = el("div", { class: "actions" });
+    actions.append(el("a", { class: "btn btn-primary", href: a.url, target: "_blank", rel: "noopener" }, "Abrir aplicação"));
+    if (a.opl) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(a.opl), target: "_blank", rel: "noopener" }, "OPL"));
+    if (a.material) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(a.material), download: "" }, "Material"));
+
+    card.append(head, el("p", {}, a.descricao), quando, actions);
+    return card;
+  }
+
+  function listaFicheiros(itens) {
+    const ul = el("ul", { class: "files" });
+    itens.forEach(f => {
+      const li = el("li");
+      const link = el("a", { href: encodeURI(f.ficheiro), target: "_blank", rel: "noopener" });
+      link.append(
+        el("span", { class: "ext" }, extensao(f.ficheiro)),
+        el("span", { class: "file-name" }, nomeFicheiro(f.ficheiro)),
+        el("span", { class: "file-app" }, f.app)
+      );
+      li.append(link);
+      ul.append(li);
+    });
+    return ul;
+  }
+
   function render(filtro) {
     const q = (filtro || "").trim().toLowerCase();
-    grid.replaceChildren();
-    const visiveis = APPS.filter(a =>
-      [a.nome, a.tag, a.descricao, a.quando].join(" ").toLowerCase().includes(q));
+    content.replaceChildren();
+    let total = 0;
 
-    visiveis.forEach(a => {
-      const card = el("article", { class: "card" });
-
-      const head = el("div", { class: "card-head" });
-      head.append(el("div", { class: "icon", "aria-hidden": "true" }, a.icone));
-      const titulo = el("div");
-      titulo.append(el("h2", {}, a.nome), el("div", { class: "tag" }, a.tag));
-      head.append(titulo);
-
-      const quando = el("div", { class: "when" });
-      quando.append(el("b", {}, "Quando usar: "), document.createTextNode(a.quando));
-
-      const actions = el("div", { class: "actions" });
-      const abrir = el("a", { class: "btn btn-primary", href: a.url || "#", target: "_blank", rel: "noopener" }, "Abrir aplicação");
-      if (!a.url) abrir.setAttribute("aria-disabled", "true");
-      actions.append(abrir);
-      if (a.doc) {
-        actions.append(el("a", { class: "btn btn-secondary", href: a.doc, target: "_blank", rel: "noopener" }, "Manual (OPL)"));
-      }
-
-      card.append(head, el("p", {}, a.descricao), quando, actions);
-      grid.append(card);
+    GRUPOS.forEach(g => {
+      const apps = APPS.filter(a => a.grupo === g.id && corresponde(q, a.nome, a.tag, a.descricao, a.quando, g.titulo));
+      if (!apps.length) return;
+      total += apps.length;
+      const s = secao(g.id, g.titulo, g.sub);
+      const grid = el("div", { class: "grid" });
+      apps.forEach(a => grid.append(cartao(a)));
+      s.append(grid);
+      content.append(s);
     });
 
-    empty.hidden = visiveis.length > 0;
+    [
+      { id: "opls", titulo: "📁 OPLs", sub: "Manuais passo a passo de cada aplicação.", itens: OPLS },
+      { id: "material", titulo: "📁 Material de apoio", sub: "Ficheiros necessários para usar algumas aplicações.", itens: MATERIAL }
+    ].forEach(p => {
+      const itens = p.itens.filter(f => corresponde(q, nomeFicheiro(f.ficheiro), f.app, p.titulo));
+      if (!itens.length) return;
+      total += itens.length;
+      const s = secao(p.id, p.titulo, p.sub);
+      s.append(listaFicheiros(itens));
+      content.append(s);
+    });
+
+    empty.hidden = total > 0;
   }
 
   search.addEventListener("input", e => render(e.target.value));
