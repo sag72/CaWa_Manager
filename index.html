@@ -111,9 +111,10 @@
 <script>
   // ------------------------------------------------------------------
   // CONFIGURAÇÃO
-  // Aplicações: "grupo" decide a secção. "opl" e "material" são caminhos
-  // de ficheiros deste repositório (pastas OPLS/ e MATERIAL_APOIO/);
-  // deixa "" se não existir.
+  // Aplicações: "grupo" decide a secção. As pastas OPLS/ e MATERIAL_APOIO/
+  // são lidas do GitHub sempre que a página abre: basta carregar lá o
+  // ficheiro. Um ficheiro fica ligado à aplicação cujas "chaves" aparecem
+  // no nome (sem distinguir maiúsculas nem acentos).
   // ------------------------------------------------------------------
   const GRUPOS = [
     { id: "operacionais", titulo: "Operacionais do CAWA", sub: "Tarefas do dia a dia: aberturas, fechos e etiquetas das lojas." },
@@ -129,8 +130,7 @@
       descricao: "Acrescenta lojas novas às applications XML do MFT, por insígnia.",
       quando: "Abriu uma loja nova e é preciso incluí-la nos fluxos.",
       url: "https://sag72.github.io/CaWa_NovaLoja/",
-      opl: "OPLS/OPL – Abertura de Lojas no dSeries.pdf",
-      material: ""
+      chaves: ["abertura"]
     },
     {
       grupo: "operacionais",
@@ -140,8 +140,7 @@
       descricao: "Remove lojas fechadas das applications XML do MFT.",
       quando: "Uma loja fechou e tem de sair dos fluxos.",
       url: "https://sag72.github.io/CaWa_ApagarLoja/",
-      opl: "OPLS/OPL – Fecho de Lojas no dSeries.pdf",
-      material: ""
+      chaves: ["fecho"]
     },
     {
       grupo: "operacionais",
@@ -151,8 +150,7 @@
       descricao: "Adiciona ou remove lojas nos XML VUSION (ELEC/STOCK) e GAMFT CQPML.",
       quando: "Uma loja passa a ter (ou deixa de ter) etiquetas eletrónicas.",
       url: "https://sag72.github.io/CaWa_EtiquetasElectronicas/",
-      opl: "",
-      material: ""
+      chaves: ["etiqueta"]
     },
     {
       grupo: "projectos",
@@ -162,8 +160,7 @@
       descricao: "Gera as applications MFT_FO_GAMFT_ELECTAG_CQPML a partir do Excel de lojas, acrescenta lojas/jobs e adiciona insígnia aos jobs PML.",
       quando: "É preciso criar ou atualizar applications CQ/PML em bloco.",
       url: "https://sag72.github.io/CaWa_Electag_CQ_PML/",
-      opl: "OPLS/OPL_Gerador_CAWA.docx",
-      material: "MATERIAL_APOIO/LojasUnifo_CQ_PML.xlsx"
+      chaves: ["gerador_cawa", "gerador cawa", "cq_pml", "cqpml"]
     },
     {
       grupo: "projectos",
@@ -173,8 +170,7 @@
       descricao: "Acrescenta lojas do Excel às applications XML MFT de pesos (SCOT EANS), por insígnia (CNT, CBD, MDL).",
       quando: "É preciso incluir lojas novas nos fluxos de pesos.",
       url: "https://sag72.github.io/CaWa_Pesos/",
-      opl: "",
-      material: "MATERIAL_APOIO/CAWA_MFT_BDPESOS.xlsx"
+      chaves: ["pesos"]
     },
     {
       grupo: "projectos",
@@ -184,8 +180,7 @@
       descricao: "Gera os XML das applications MFT a partir do Excel de migração EAI → MFT, copiando horários, dependências e jobs ligados do EAI de origem.",
       quando: "É preciso migrar applications EAI para MFT em bloco.",
       url: "https://sag72.github.io/CaWa_GeradorMFT/",
-      opl: "",
-      material: ""
+      chaves: ["gerador_mft", "gerador mft", "geradormft", "eai"]
     },
     {
       grupo: "projectos",
@@ -195,21 +190,20 @@
       descricao: "Adiciona ou remove lojas nos jobs SALES / nb_sales_files_fo_ok de uma application, e põe lojas de um CSV em \"Only on request\".",
       quando: "É preciso mexer nas lojas dos jobs de vendas ou suspendê-las (only on request).",
       url: "https://sag72.github.io/CaWa_LojasSales/",
-      opl: "",
-      material: ""
+      chaves: ["sales"]
     }
   ];
 
-  // Ficheiros das pastas (o "app" indica para que aplicação servem).
-  const OPLS = [
-    { ficheiro: "OPLS/OPL – Abertura de Lojas no dSeries.pdf", app: "Aberturas de Lojas" },
-    { ficheiro: "OPLS/OPL – Fecho de Lojas no dSeries.pdf", app: "Fechos de Lojas" },
-    { ficheiro: "OPLS/OPL_Gerador_CAWA.docx", app: "Gerador CAWA ELECTAG CQ/PML" }
-  ];
+  const REPO_API = "https://api.github.com/repos/sag72/Portal_Apps/git/trees/main?recursive=1";
 
-  const MATERIAL = [
-    { ficheiro: "MATERIAL_APOIO/LojasUnifo_CQ_PML.xlsx", app: "Gerador CAWA ELECTAG CQ/PML" },
-    { ficheiro: "MATERIAL_APOIO/CAWA_MFT_BDPESOS.xlsx", app: "Pesos" }
+  // Usado só se o GitHub não responder (ex.: limite de pedidos da API).
+  let FICHEIROS = [
+    "OPLS/OPL – Abertura de Lojas no dSeries.pdf",
+    "OPLS/OPL – Fecho de Lojas no dSeries.pdf",
+    "OPLS/OPL - Gerador_CAWA.pdf",
+    "OPLS/OPL – Lojas nos XML Pesos do CAWA.pdf",
+    "MATERIAL_APOIO/CAWA_MFT_BDPESOS.xlsx",
+    "MATERIAL_APOIO/LojasUnifo_CQ_PML.xlsx"
   ];
 
   const content = document.getElementById("content");
@@ -226,6 +220,16 @@
   const nomeFicheiro = caminho => caminho.split("/").pop();
   const extensao = caminho => (caminho.split(".").pop() || "").toUpperCase();
   const corresponde = (q, ...campos) => campos.join(" ").toLowerCase().includes(q);
+  const normalizar = t => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+  const appDoFicheiro = caminho => {
+    const nome = normalizar(nomeFicheiro(caminho));
+    return APPS.find(a => a.chaves.some(c => nome.includes(normalizar(c))));
+  };
+  const daPasta = pasta => FICHEIROS
+    .filter(f => f.startsWith(pasta + "/"))
+    .map(f => ({ ficheiro: f, app: (appDoFicheiro(f) || {}).nome || "" }));
+  const ficheiroDaApp = (pasta, app) => (daPasta(pasta).find(f => f.app === app.nome) || {}).ficheiro;
 
   function secao(id, titulo, sub) {
     const s = el("section", { id });
@@ -247,8 +251,10 @@
 
     const actions = el("div", { class: "actions" });
     actions.append(el("a", { class: "btn btn-primary", href: a.url, target: "_blank", rel: "noopener" }, "Abrir aplicação"));
-    if (a.opl) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(a.opl), target: "_blank", rel: "noopener" }, "OPL"));
-    if (a.material) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(a.material), download: "" }, "Material"));
+    const opl = ficheiroDaApp("OPLS", a);
+    const material = ficheiroDaApp("MATERIAL_APOIO", a);
+    if (opl) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(opl), target: "_blank", rel: "noopener" }, "OPL"));
+    if (material) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(material), download: "" }, "Material"));
 
     card.append(head, el("p", {}, a.descricao), quando, actions);
     return card;
@@ -287,8 +293,8 @@
     });
 
     [
-      { id: "opls", titulo: "📁 OPLs", sub: "Manuais passo a passo de cada aplicação.", itens: OPLS },
-      { id: "material", titulo: "📁 Material de apoio", sub: "Ficheiros necessários para usar algumas aplicações.", itens: MATERIAL }
+      { id: "opls", titulo: "📁 OPLs", sub: "Manuais passo a passo de cada aplicação.", itens: daPasta("OPLS") },
+      { id: "material", titulo: "📁 Material de apoio", sub: "Ficheiros necessários para usar algumas aplicações.", itens: daPasta("MATERIAL_APOIO") }
     ].forEach(p => {
       const itens = p.itens.filter(f => corresponde(q, nomeFicheiro(f.ficheiro), f.app, p.titulo));
       if (!itens.length) return;
@@ -303,6 +309,17 @@
 
   search.addEventListener("input", e => render(e.target.value));
   render("");
+
+  fetch(REPO_API, { cache: "no-store" })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(dados => {
+      FICHEIROS = dados.tree
+        .filter(f => f.type === "blob" && /^(OPLS|MATERIAL_APOIO)\//.test(f.path))
+        .map(f => f.path)
+        .sort((a, b) => a.localeCompare(b, "pt"));
+      render(search.value);
+    })
+    .catch(() => {});
 </script>
 </body>
 </html>
