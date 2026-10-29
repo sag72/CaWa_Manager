@@ -56,8 +56,6 @@
   .card p { margin: 0; color: var(--muted); flex: 1; }
   .when { font-size: 13px; color: var(--text); }
   .when b { font-weight: 600; }
-  .gain { font-size: 13px; padding: 6px 10px; border-radius: 6px; background: var(--accent-soft); color: var(--text); }
-  .gain b { font-weight: 600; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
   .btn {
     display: inline-block; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;
@@ -97,7 +95,7 @@
     <nav aria-label="Secções">
       <a href="#operacionais">Gestão do Dia a Dia</a>
       <a href="#projectos">Respostas a Projetos</a>
-      <a href="#opls">OPLs</a>
+      <a href="#opls">Manuais</a>
       <a href="#material">Material de apoio</a>
     </nav>
   </header>
@@ -113,7 +111,7 @@
 <script>
   // ------------------------------------------------------------------
   // CONFIGURAÇÃO
-  // Ferramentas: "grupo" decide a secção; "ganho" é opcional. As pastas OPLS/ e MATERIAL_APOIO/
+  // Ferramentas: "grupo" decide a secção. As pastas OPLS/ e MATERIAL_APOIO/
   // são lidas do GitHub sempre que a página abre: basta carregar lá o
   // ficheiro. Um ficheiro fica ligado à ferramenta cujas "chaves" aparecem
   // no nome (sem distinguir maiúsculas nem acentos).
@@ -131,7 +129,6 @@
       icone: "🏪",
       descricao: "Ferramenta que permite a criação de novas lojas nos processos relacionados com o dia a dia da loja, nomeadamente artigos, preços, promoções e vendas, entre outros.",
       quando: "Abriu uma loja nova e é preciso incluí-la nos processos.",
-      ganho: { antes: "40 a 60 min por loja (5 min × 8 a 12 fluxos)", agora: "10 min para todas as lojas de uma vez" },
       url: "https://sag72.github.io/CaWa_NovaLoja/",
       chaves: ["abertura"]
     },
@@ -157,10 +154,10 @@
     },
     {
       grupo: "projectos",
-      nome: "Gerador de Processos ELECTAG CQ/PML",
+      nome: "Criação de Processos de Etiquetas CQ/PML",
       tag: "CAWA · MFT",
       icone: "⚙️",
-      descricao: "Ferramenta que gera, a partir do Excel de lojas, os processos de etiquetas eletrónicas CQ/PML, e que permite acrescentar lojas e indicar a insígnia em processos já existentes.",
+      descricao: "Ferramenta que cria, a partir do Excel de lojas, os processos de etiquetas eletrónicas CQ/PML, e que permite acrescentar lojas e indicar a insígnia em processos já existentes.",
       quando: "É preciso criar ou atualizar em bloco os processos ELECTAG CQ/PML.",
       url: "https://sag72.github.io/CaWa_Electag_CQ_PML/",
       chaves: ["gerador_cawa", "gerador cawa", "cq_pml", "cqpml"]
@@ -260,16 +257,10 @@
     actions.append(el("a", { class: "btn btn-primary", href: a.url, target: "_blank", rel: "noopener" }, "Abrir ferramenta"));
     const opl = ficheiroDaApp("OPLS", a);
     const material = ficheiroDaApp("MATERIAL_APOIO", a);
-    if (opl) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(opl), target: "_blank", rel: "noopener" }, "OPL"));
+    if (opl) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(opl), target: "_blank", rel: "noopener" }, "Manual"));
     if (material) actions.append(el("a", { class: "btn btn-secondary", href: encodeURI(material), download: "" }, "Material"));
 
-    card.append(head, el("p", {}, a.descricao), quando);
-    if (a.ganho) {
-      const ganho = el("div", { class: "gain" });
-      ganho.append(el("b", {}, "Ganho: "), document.createTextNode(`antes ${a.ganho.antes} · agora ${a.ganho.agora}`));
-      card.append(ganho);
-    }
-    card.append(actions);
+    card.append(head, el("p", {}, a.descricao), quando, actions);
     return card;
   }
 
@@ -306,7 +297,7 @@
     });
 
     [
-      { id: "opls", titulo: "📁 OPLs", sub: "Manuais passo a passo de cada ferramenta.", itens: daPasta("OPLS") },
+      { id: "opls", titulo: "📁 Manuais", sub: "Manuais passo a passo de cada ferramenta.", itens: daPasta("OPLS") },
       { id: "material", titulo: "📁 Material de apoio", sub: "Ficheiros necessários para usar algumas ferramentas.", itens: daPasta("MATERIAL_APOIO") }
     ].forEach(p => {
       const itens = p.itens.filter(f => corresponde(q, nomeFicheiro(f.ficheiro), f.app, p.titulo));
